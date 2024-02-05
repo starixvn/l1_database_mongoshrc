@@ -57,7 +57,7 @@ async function getAuthDocument(principal, env) {
     }
 
     const user = await getUser.bind(this)(principal);
-    const pwd = await getPwd.bind(this)(user, principal, env);
+    const pwd = getPwd.bind(this)(user, principal, env);
 
     return { user, pwd };
 }
@@ -95,9 +95,9 @@ async function getUser(principal) {
  * @param {string} user
  * @param {string | AuthDocument} principal
  * @param {string} env
- * @returns {Promise<string>}
+ * @returns {string}
  */
-async function getPwd(user, principal, env) {
+function getPwd(user, principal, env) {
     if (typeof this.Mongo !== "function") {
         throw new Error("`this` is not `global`");
     }
@@ -164,11 +164,11 @@ async function attach(connectionConfig) {
     }
 
     if (connectionConfig instanceof Array) {
-        attachMultiple.bind(this)(connectionConfig);
+        await attachMultiple.bind(this)(connectionConfig);
         // @ts-ignore
         return this.db;
     }
-    return attachSingle.bind(this)(connectionConfig);
+    return await attachSingle.bind(this)(connectionConfig);
 }
 
 /**
@@ -189,7 +189,7 @@ async function attachSingle(connectionConfig) {
     const dbs = ENVIRONMENTS.get(env).get(name) || (await registerDBs.bind(this)(env, name, uri));
 
     try {
-        login.bind(this)(dbs, auth);
+        await login.bind(this)(dbs, auth);
     } catch (error) {
         logError(error, label);
     }
@@ -212,7 +212,7 @@ async function attachMultiple(connectionConfigs) {
     }
 
     const tasks = connectionConfigs.map(attachSingle.bind(this));
-    return Promise.all(tasks);
+    return await Promise.all(tasks);
 }
 
 /**
@@ -225,12 +225,22 @@ async function attachMultiple(connectionConfigs) {
 async function registerDBs(env, name, uri) {
     const label = "registerDBs";
 
-    const db = await this.connect(uri);
+    const { user, pwd } = await getAuthDocument.bind(this)("", env);
+    const db = await this.connect(uri, user, pwd);
     const dbs = new DBs(db);
+    dbs.name = name;
     dbs.environment = env;
     ENVIRONMENTS.get(env).set(name, dbs);
-
     logVerbose(`Connect to [${name}] successfully.`, label);
+
+    Object.defineProperty(this, env, {
+        get: () => Array.from(ENVIRONMENTS.get(env).values()),
+        configurable: true,
+    });
+    Object.defineProperty(this, name, {
+        get: () => ENVIRONMENTS.get(env).get(name),
+        configurable: true,
+    });
     return dbs;
 }
 

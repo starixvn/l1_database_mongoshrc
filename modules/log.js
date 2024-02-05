@@ -6,10 +6,15 @@ const { inspect } = require("util");
  * @param {string} [label]
  */
 const doLog = (verbosity, message, label = "") => {
+    // @ts-ignore
+    if (typeof message === "object" && message.code === "SHAPI-10004") {
+        return;
+    }
+
     const time = new Date().toISOString();
     const level = ` ${verbosity}  `;
     const subject = `[${pad(label, 10)}]`;
-    const content = stringify(message).replace(/\n/g, "\n".padEnd(29));
+    const content = stringify(message).replace(/\n/g, "\n" + "".padEnd(30));
     console.log(time, level, subject, content);
 };
 

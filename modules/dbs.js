@@ -81,12 +81,12 @@ class DBs {
 
     get status() {
         if (this.isWritablePrimary) {
-            return "✍️";
+            return "🖋";
         }
         if (this.secondary) {
-            return "👁️‍🗨️";
+            return "👁";
         }
-        return "⛔";
+        return "⚠";
     }
 
     /** @private @type {AuthenticatedUser} */
@@ -104,7 +104,32 @@ class DBs {
     }
 
     /** @type {string} */
-    environment = "default";
+    get name() {
+        // @ts-ignore
+        return this._mongo.__name || "default";
+    }
+    /** @param {string} input */
+    set name(input) {
+        Object.defineProperty(this._mongo, "__name", {
+            value: input || this.replicaSet || "default",
+            configurable: false,
+            enumerable: false,
+        });
+    }
+
+    /** @type {string} */
+    get environment() {
+        // @ts-ignore
+        return this._mongo.__environment || "default";
+    }
+    /** @param {string} input */
+    set environment(input) {
+        Object.defineProperty(this._mongo, "__environment", {
+            value: input || "default",
+            configurable: false,
+            enumerable: false,
+        });
+    }
 
     /**
      * @constructor
@@ -114,8 +139,7 @@ class DBs {
         this.mongoInstance = getMongo(reference);
 
         this.reload();
-        // @ts-ignore
-        this[custom] = this.toString;
+        this.configureProperties();
 
         /** @type {ProxyHandler<DBs>} */
         const handler = {
@@ -123,6 +147,35 @@ class DBs {
         };
         const proxy = new Proxy(this, handler);
         return proxy;
+    }
+
+    configureProperties() {
+        /** @type {PropertyDescriptor} */
+        const hiddenDescriptor = {
+            configurable: false,
+            enumerable: false,
+        };
+
+        Object.defineProperty(this, custom, {
+            ...hiddenDescriptor,
+            value: this.toString,
+            writable: false,
+        });
+
+        Object.defineProperties(this, {
+            mongoInstance: hiddenDescriptor,
+            replicaSetName: hiddenDescriptor,
+            hostName: hiddenDescriptor,
+            isWritablePrimary: hiddenDescriptor,
+            secondary: hiddenDescriptor,
+            authenticatedUser: hiddenDescriptor,
+            serverIdentity: hiddenDescriptor,
+            configureProperties: hiddenDescriptor,
+            getMongoInfomation: hiddenDescriptor,
+            getAuthenticatedUser: hiddenDescriptor,
+            getServerIdentity: hiddenDescriptor,
+            mapDatabaseNames: hiddenDescriptor,
+        });
     }
 
     /** @async @private */
@@ -147,6 +200,10 @@ class DBs {
             const authenticatedUsers = connectionStatus.authInfo.authenticatedUsers;
             this.authenticatedUser = authenticatedUsers.length ? authenticatedUsers[0] : NO_USER;
         } catch (error) {
+            if (error instanceof Error && error.name === "MongoPoolClosedError") {
+                this.getAuthenticatedUser();
+                return;
+            }
             logError(error, "DBs.getAuthenticatedUser");
         }
     }
@@ -165,8 +222,9 @@ class DBs {
         try {
             const dbNames = await this.getDBNames();
             for (const db of dbNames) {
-                // @ts-ignore
-                this[db] = this.getDB(db);
+                Object.defineProperty(this, db, {
+                    get: () => this.getDB(db),
+                });
             }
         } catch (error) {
             logError(error, "mapDatabaseNames");
