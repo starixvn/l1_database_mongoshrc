@@ -1,5 +1,5 @@
 /**
- * @typedef {import("@mongosh/shell-api").ShellApi} ShellApi
+ * @typedef {import("./type").MongoShell} MongoShell
  * @typedef {import("@mongosh/shell-api").Database} Database
  * @typedef {{user: string, pwd: string}} AuthDocument
  * @typedef {{ env: string, name: string, uri: string, auth: AuthDocument }} ConnectionConfig
@@ -10,7 +10,7 @@ const { VAULT, ENVIRONMENTS } = require("../secrets/vault");
 const { logError, logVerbose } = require("./log");
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {DBs} dbs
  * @param {string | AuthDocument} principal
@@ -23,7 +23,6 @@ async function login(dbs, principal = "") {
         return { ok: 0 };
     }
 
-    // @ts-ignore
     const resolvedDBs = dbs || this.dbs;
 
     if (!(resolvedDBs instanceof DBs)) {
@@ -45,7 +44,7 @@ async function login(dbs, principal = "") {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {string | AuthDocument} principal
  * @param {string} env
@@ -63,7 +62,7 @@ async function getAuthDocument(principal, env) {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {string | AuthDocument} principal
  * @returns {Promise<string>}
@@ -79,9 +78,7 @@ async function getUser(principal) {
         return user;
     }
 
-    // @ts-ignore
     if (this.credential && this.credential.user) {
-        // @ts-ignore
         return this.credential.user;
     }
 
@@ -90,7 +87,7 @@ async function getUser(principal) {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {string} user
  * @param {string | AuthDocument} principal
@@ -108,7 +105,6 @@ function getPwd(user, principal, env) {
     }
 
     if (typeof principal === "string") {
-        // @ts-ignore
         const { user: defaultUser, pwd: defaultPwd } = this.credential;
         return defaultUser === user ? defaultPwd : "";
     }
@@ -117,7 +113,7 @@ function getPwd(user, principal, env) {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {DBs} dbs
  * @param {AuthDocument} authenticateDocument
@@ -151,7 +147,7 @@ async function doLogin(dbs, authenticateDocument) {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {ConnectionConfig | ConnectionConfig[]} connectionConfig
  */
@@ -159,20 +155,18 @@ async function attach(connectionConfig) {
     const label = "attach";
     if (typeof this.Mongo !== "function") {
         logError("`this` is not `global`", label);
-        // @ts-ignore
         return this.db;
     }
 
     if (connectionConfig instanceof Array) {
         await attachMultiple.bind(this)(connectionConfig);
-        // @ts-ignore
         return this.db;
     }
     return await attachSingle.bind(this)(connectionConfig);
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {ConnectionConfig} connectionConfig
  * @returns {Promise<Database>}
@@ -181,7 +175,6 @@ async function attachSingle(connectionConfig) {
     const label = "attachSingle";
     if (typeof this.Mongo !== "function") {
         logError("`this` is not `global`", label);
-        // @ts-ignore
         return this.db;
     }
 
@@ -198,7 +191,7 @@ async function attachSingle(connectionConfig) {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {ConnectionConfig[]} connectionConfigs
  * @returns {Promise<Database[]>}
@@ -207,8 +200,7 @@ async function attachMultiple(connectionConfigs) {
     const label = "attachMultiple";
     if (typeof this.Mongo !== "function") {
         logError("`this` is not `global`", label);
-        // @ts-ignore
-        return this.db;
+        return [this.db];
     }
 
     const tasks = connectionConfigs.map(attachSingle.bind(this));
@@ -216,7 +208,7 @@ async function attachMultiple(connectionConfigs) {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  * @param {string} env
  * @param {string} name

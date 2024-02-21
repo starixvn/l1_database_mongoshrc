@@ -1,7 +1,7 @@
 /**
- * @typedef {import("@mongosh/shell-api").ShellApi} ShellApi
  * @typedef {import("@mongosh/shell-api").Database} Database
  * @typedef {import("./dbs").DBs} DBs
+ * @typedef {import("./type").MongoShell} MongoShell
  */
 
 const { ENVIRONMENTS } = require("../secrets/vault");
@@ -10,16 +10,13 @@ const { logError } = require("./log");
 const TIME_REGEX = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T([0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}Z)$/;
 
 /**
- * @this ShellApi
+ * @this MongoShell
  */
 function getDBs() {
     const label = "getDBs";
 
     try {
-        const mongo = /** @type {Database} */ (
-            // @ts-ignore
-            this.db
-        ).getMongo();
+        const mongo = this.db.getMongo();
 
         /** @type {string} */
         // @ts-ignore
@@ -35,7 +32,7 @@ function getDBs() {
 }
 
 /**
- * @this ShellApi
+ * @this MongoShell
  * @async
  */
 async function prompt() {
@@ -45,19 +42,13 @@ async function prompt() {
     getDBs.bind(this)();
 
     try {
-        components.push(
-            // @ts-ignore
-            `[${/** @type {DBs} */ (this.dbs).toString()}]`
-        );
+        components.push(`[${this.dbs.toString()}]`);
     } catch (error) {
         components.push("(nodb)");
     }
 
     try {
-        components.push(
-            // @ts-ignore
-            `@${/** @type {Database} */ (this.db).getName()}`
-        );
+        components.push(`@${this.db.getName()}`);
     } catch (error) {}
 
     try {
@@ -66,8 +57,7 @@ async function prompt() {
     } catch (error) {}
 
     try {
-        // @ts-ignore
-        `·${/** @type {DBs} */ (this.dbs).user}·`;
+        components.push(`·${this.dbs.user}·`);
     } catch (error) {}
 
     components.push("»");
