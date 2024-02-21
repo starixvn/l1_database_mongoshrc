@@ -7,7 +7,7 @@
 
 const { DBs } = require("./dbs");
 const { VAULT, ENVIRONMENTS } = require("../secrets/vault");
-const { logError, logVerbose } = require("./log");
+const { logError, logDebug } = require("./log");
 
 /**
  * @this MongoShell
@@ -223,7 +223,7 @@ async function registerDBs(env, name, uri) {
     dbs.name = name;
     dbs.environment = env;
     ENVIRONMENTS.get(env).set(name, dbs);
-    logVerbose(`Connect to [${name}] successfully.`, label);
+    logDebug(`Connect to [${name}] successfully.`, label);
 
     Object.defineProperty(this, env, {
         get: () => Array.from(ENVIRONMENTS.get(env).values()),

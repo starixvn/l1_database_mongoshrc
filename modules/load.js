@@ -2,7 +2,7 @@
  * @typedef {import("@mongosh/shell-api").ShellApi} ShellApi
  */
 
-const { logError, logVerbose, logWarning } = require("./log");
+const { logError, logDebug, logWarning } = require("./log");
 const { ls, isDirectory, isFile, isValidJs } = require("./file");
 const { resolve, basename } = require("path");
 
@@ -41,7 +41,7 @@ function loadModuleScript(modulePath) {
 
     const module = require(modulePath);
     Object.entries(module).forEach(assignGlobal.bind(this));
-    logVerbose(`Module "${basename(modulePath)}" loaded.`, label);
+    logDebug(`Module "${basename(modulePath)}" loaded.`, label);
 }
 
 /**
@@ -57,7 +57,7 @@ function loadModuleFolder(modulePath) {
 
     ls(modulePath, isDirectory).forEach(loadModuleFolder.bind(this));
     ls(modulePath, isValidJs).forEach(loadModuleScript.bind(this));
-    logVerbose(`Folder "${basename(modulePath)}" loaded.`, label);
+    logDebug(`Folder "${basename(modulePath)}" loaded.`, label);
     return;
 }
 
@@ -98,7 +98,7 @@ function loadScript(scriptPath) {
 
     try {
         this.load(absolutePath);
-        logVerbose(`Script "${basename(absolutePath)} loaded."`, label);
+        logDebug(`Script "${basename(absolutePath)} loaded."`, label);
     } catch (error) {
         logError(error, label);
     }
@@ -124,7 +124,7 @@ function loadFolder(folderPath) {
     try {
         ls(absolutePath, isDirectory).forEach(loadFolder.bind(this));
         ls(absolutePath, isValidJs).forEach(loadScript.bind(this));
-        logVerbose(`Folder "${basename(absolutePath)} loaded."`, label);
+        logDebug(`Folder "${basename(absolutePath)} loaded."`, label);
     } catch (error) {
         logError(error, label);
     }
