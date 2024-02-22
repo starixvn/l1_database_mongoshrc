@@ -160,8 +160,8 @@ async function attach(connectionConfig) {
     }
 
     if (connectionConfig instanceof Array) {
-        await attachMultiple.bind(this)(connectionConfig);
-        return this.db;
+        const dbList = await attachMultiple.bind(this)(connectionConfig);
+        return dbList[0];
     }
     return await attachSingle.bind(this)(connectionConfig);
 }
