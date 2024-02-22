@@ -161,21 +161,6 @@ class DBs {
             value: this.toString,
             writable: false,
         });
-
-        Object.defineProperties(this, {
-            mongoInstance: hiddenDescriptor,
-            replicaSetName: hiddenDescriptor,
-            hostName: hiddenDescriptor,
-            isWritablePrimary: hiddenDescriptor,
-            secondary: hiddenDescriptor,
-            authenticatedUser: hiddenDescriptor,
-            serverIdentity: hiddenDescriptor,
-            configureProperties: hiddenDescriptor,
-            getMongoInfomation: hiddenDescriptor,
-            getAuthenticatedUser: hiddenDescriptor,
-            getServerIdentity: hiddenDescriptor,
-            mapDatabaseNames: hiddenDescriptor,
-        });
     }
 
     /** @async @private */
@@ -187,7 +172,7 @@ class DBs {
             this.isWritablePrimary = isWritablePrimary;
             this.secondary = secondary;
         } catch (error) {
-            logError(error, "DBs.getMongoInfomation");
+            logError(error, `[${this.toString()}].getMongoInfomation`);
         }
     }
 
@@ -204,7 +189,7 @@ class DBs {
                 this.getAuthenticatedUser();
                 return;
             }
-            logError(error, "DBs.getAuthenticatedUser");
+            logError(error, `[${this.toString()}].getAuthenticatedUser`);
         }
     }
 
@@ -213,7 +198,11 @@ class DBs {
         try {
             this.serverIdentity = /** @type {Identity} */ (await this._mongo.getDB("admin").getCollection("identity").findOne());
         } catch (error) {
-            logError(error, "getServerIdentity");
+            // @ts-ignore
+            if (error instanceof Error && error.codeName === "Unauthorized") {
+                return;
+            }
+            logError(error, `[${this.toString()}].getServerIdentity`);
         }
     }
 
@@ -224,10 +213,15 @@ class DBs {
             for (const db of dbNames) {
                 Object.defineProperty(this, db, {
                     get: () => this.getDB(db),
+                    configurable: true,
                 });
             }
         } catch (error) {
-            logError(error, "mapDatabaseNames");
+            // @ts-ignore
+            if (error instanceof Error && error.codeName === "Unauthorized") {
+                return;
+            }
+            logError(error, `[${this.toString()}].mapDatabaseNames`);
         }
     }
 
@@ -239,9 +233,12 @@ class DBs {
         if (this.reloading) {
             return;
         }
-        this.reloading = true;
-        await Promise.allSettled([this.getMongoInfomation(), this.getAuthenticatedUser(), this.getServerIdentity(), this.mapDatabaseNames()]);
-        this.reloading = false;
+        try {
+            this.reloading = true;
+            await Promise.allSettled([this.getMongoInfomation(), this.getAuthenticatedUser(), this.getServerIdentity(), this.mapDatabaseNames()]);
+        } finally {
+            this.reloading = false;
+        }
     }
 
     /** @async @param {string | Document} command */

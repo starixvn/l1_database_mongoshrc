@@ -1,6 +1,9 @@
 {
-    const { ls, isFile } = require("./modules/file");
+    const { ls } = require("./modules/file");
     const { loadModule } = require("./modules/load");
+    const { setVerbose } = require("./modules/log");
 
-    ls("./modules", isFile).forEach(loadModule.bind(global));
+    setVerbose("debug");
+    ls("./modules").forEach(loadModule.bind(global));
+    setVerbose("info");
 }

@@ -134,6 +134,7 @@ async function doLogin(dbs, authenticateDocument) {
         try {
             authResult = await dbs.getDB("admin").auth(authenticateDocument);
             if (authResult.ok) {
+                dbs.reload();
                 break;
             }
         } catch (error) {
@@ -217,8 +218,8 @@ async function attachMultiple(connectionConfigs) {
 async function registerDBs(env, name, uri) {
     const label = "registerDBs";
 
-    const { user, pwd } = await getAuthDocument.bind(this)("", env);
-    const db = await this.connect(uri, user, pwd);
+    // const { user, pwd } = await getAuthDocument.bind(this)("", env);
+    const db = await this.connect(uri); //, user, pwd);
     const dbs = new DBs(db);
     dbs.name = name;
     dbs.environment = env;
