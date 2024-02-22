@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "moduleResolution": "node",
+        "checkJs": true,
+        "maxNodeModuleJsDepth": 1,
+        "strict": true
+    }
+}
