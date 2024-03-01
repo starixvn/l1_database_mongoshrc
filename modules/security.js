@@ -47,16 +47,16 @@ async function login(dbs, principal = "") {
  * @this MongoShell
  * @async
  * @param {string | AuthDocument} principal
- * @param {string} env
+ * @param {string} environment
  * @returns {Promise<AuthDocument>}
  */
-async function getAuthDocument(principal, env) {
+async function getAuthDocument(principal, environment) {
     if (typeof this.Mongo !== "function") {
         throw new Error("`this` is not `global`");
     }
 
     const user = await getUser.bind(this)(principal);
-    const pwd = getPwd.bind(this)(user, principal, env);
+    const pwd = getPwd.bind(this)(user, principal, environment);
 
     return { user, pwd };
 }
@@ -91,15 +91,15 @@ async function getUser(principal) {
  * @async
  * @param {string} user
  * @param {string | AuthDocument} principal
- * @param {string} env
+ * @param {string} environment
  * @returns {string}
  */
-function getPwd(user, principal, env) {
+function getPwd(user, principal, environment) {
     if (typeof this.Mongo !== "function") {
         throw new Error("`this` is not `global`");
     }
 
-    const pwd = VAULT.get(env).get(user);
+    const pwd = VAULT.get(environment).get(user);
     if (pwd) {
         return pwd;
     }
@@ -182,12 +182,6 @@ async function attachSingle(connectionConfig) {
     const { env, name, uri, auth } = connectionConfig;
     const dbs = ENVIRONMENTS.get(env).get(name) || (await registerDBs.bind(this)(env, name, uri));
 
-    try {
-        await login.bind(this)(dbs, auth);
-    } catch (error) {
-        logError(error, label);
-    }
-
     return dbs.getDB("admin");
 }
 
@@ -218,8 +212,8 @@ async function attachMultiple(connectionConfigs) {
 async function registerDBs(env, name, uri) {
     const label = "registerDBs";
 
-    // const { user, pwd } = await getAuthDocument.bind(this)("", env);
-    const db = await this.connect(uri); //, user, pwd);
+    const { user, pwd } = this.credential ?? {};
+    const db = await this.connect(uri, user, pwd);
     const dbs = new DBs(db);
     dbs.name = name;
     dbs.environment = env;
@@ -227,7 +221,18 @@ async function registerDBs(env, name, uri) {
     logDebug(`Connect to [${name}] successfully.`, label);
 
     Object.defineProperty(this, env, {
-        get: () => Array.from(ENVIRONMENTS.get(env).values()),
+        get: () => {
+            const dbsList = ENVIRONMENTS.list(env);
+
+            /** @param {string} principal */
+            const login = async (principal) => {
+                for (const dbs of dbsList) {
+                    await this.login(dbs, principal);
+                }
+            };
+
+            return Object.assign(dbsList, { login });
+        },
         configurable: true,
     });
     Object.defineProperty(this, name, {

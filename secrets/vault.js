@@ -52,6 +52,11 @@ class Environment extends Map {
         }
         return connections;
     }
+
+    /** @param {string} env */
+    list(env) {
+        return Array.from(this.get(env).values());
+    }
 }
 
 /** @type {Environment} */
