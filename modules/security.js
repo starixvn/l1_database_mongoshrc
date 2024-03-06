@@ -180,7 +180,7 @@ async function attachSingle(connectionConfig) {
     }
 
     const { env, name, uri, auth } = connectionConfig;
-    const dbs = ENVIRONMENTS.get(env).get(name) || (await registerDBs.bind(this)(env, name, uri));
+    const dbs = ENVIRONMENTS.get(env).get(name) || (await registerDBs.bind(this)(env, name, uri, auth));
 
     return dbs.getDB("admin");
 }
@@ -208,11 +208,12 @@ async function attachMultiple(connectionConfigs) {
  * @param {string} env
  * @param {string} name
  * @param {string} uri
+ * @param {AuthDocument} [auth]
  */
-async function registerDBs(env, name, uri) {
+async function registerDBs(env, name, uri, auth) {
     const label = "registerDBs";
 
-    const { user, pwd } = this.credential ?? {};
+    const { user, pwd } = auth ?? this.credential ?? {};
     const db = await this.connect(uri, user, pwd);
     const dbs = new DBs(db);
     dbs.name = name;
