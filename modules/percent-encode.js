@@ -19,8 +19,9 @@ const percentEncode = (inputString) => {
  * @returns {PercentCode}
  */
 const toPercentCode = (int) => {
+    const hex = "0" + int.toString(16);
     // @ts-ignore
-    return `%${int.toString(16)}`;
+    return `%${hex.slice(-2)}`;
 };
 
 module.exports = { percentEncode };
