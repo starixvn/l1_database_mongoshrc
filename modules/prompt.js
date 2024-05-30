@@ -1,10 +1,10 @@
 /**
  * @typedef {import("@mongosh/shell-api").Database} Database
- * @typedef {import("./dbs").DBs} DBs
  * @typedef {import("./type").MongoShell} MongoShell
  */
 
 const { ENVIRONMENTS } = require("../secrets/vault");
+const { DBs } = require("./dbs");
 const { logError } = require("./log");
 
 const TIME_REGEX = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T([0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}Z)$/;
@@ -20,12 +20,12 @@ function getDBs() {
 
         /** @type {string} */
         // @ts-ignore
-        const name = mongo.__name;
+        const name = mongo.__name || mongo._connectionInfo.connectionString;
         /** @type {string} */
         // @ts-ignore
-        const environment = mongo.__environment;
+        const environment = mongo.__environment || "_";
 
-        Object.assign(this, { dbs: ENVIRONMENTS.get(environment).get(name) });
+        Object.assign(this, { dbs: ENVIRONMENTS.get(environment).get(name) ?? ENVIRONMENTS.get(environment).set(name, new DBs(this.db)).get(name) });
     } catch (error) {
         logError(error, label);
     }
