@@ -1,5 +1,3 @@
-const util = require("util");
-
 /**
  * @template T
  * @param {T} object
