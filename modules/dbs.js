@@ -3,6 +3,7 @@
  * @typedef {import("@mongosh/shell-api").Database} Database
  * @typedef {import("@mongosh/shell-api").Collection} Collection
  * @typedef {import("@mongosh/service-provider-core").Document } Document
+ * @typedef {import("@mongosh/service-provider-core").MongoClient } MongoClient
  * @typedef {Mongo | Database | Collection | DBs} MongoRef
  * @typedef {{ user: string, db: string }} AuthenticatedUser
  * @typedef {{ role: string, db: string }} AuthenticatedRole
@@ -223,6 +224,12 @@ class DBs {
             }
             logError(error, `[${this.toString()}].mapDatabaseNames`);
         }
+    }
+
+    /** @returns {MongoClient} */
+    getMongoClient() {
+        // @ts-ignore
+        return this._mongo._serviceProvider.mongoClient;
     }
 
     /** @private @type {boolean} */
