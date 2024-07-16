@@ -4,7 +4,9 @@
 
 const { logError, logDebug, logWarning } = require("./log");
 const { ls, isDirectory, isFile, isValidJs } = require("./file");
-const { resolve, basename } = require("path");
+const { resolve, basename, dirname } = require("path");
+const { chdir } = require("process");
+const { pwd } = require("./process.js");
 
 /**
  * @this ShellApi
@@ -83,7 +85,7 @@ function assignGlobal(entry) {
  * @this ShellApi
  * @param {string} scriptPath
  */
-function loadScript(scriptPath) {
+async function loadScript(scriptPath) {
     const label = "loadScript";
     if (typeof this.Mongo !== "function") {
         logError("`this` is not `global` - Module is not loaded.", label);
@@ -96,11 +98,16 @@ function loadScript(scriptPath) {
         return;
     }
 
+    const currentDir = resolve();
+    chdir(dirname(absolutePath));
+
     try {
-        this.load(absolutePath);
+        await this.load(absolutePath);
         logDebug(`Script "${basename(absolutePath)} loaded."`, label);
     } catch (error) {
         logError(error, label);
+    } finally {
+        chdir(currentDir);
     }
 }
 
@@ -108,7 +115,7 @@ function loadScript(scriptPath) {
  * @this ShellApi
  * @param {string} folderPath
  */
-function loadFolder(folderPath) {
+async function loadFolder(folderPath) {
     const label = "loadFolder";
     if (typeof this.Mongo !== "function") {
         logError("`this` is not `global` - Module is not loaded.", label);
@@ -122,12 +129,12 @@ function loadFolder(folderPath) {
     }
 
     try {
-        ls(absolutePath, isDirectory).forEach(loadFolder.bind(this));
-        ls(absolutePath, isValidJs).forEach(loadScript.bind(this));
+        await Promise.all(ls(absolutePath, isDirectory).map(loadFolder.bind(this)));
+        await Promise.all(ls(absolutePath, isValidJs).map(loadScript.bind(this)));
         logDebug(`Folder "${basename(absolutePath)} loaded."`, label);
     } catch (error) {
         logError(error, label);
     }
 }
 
-module.exports = { loadModule, loadFolder };
+module.exports = { loadModule, loadFolder, loadScript };
